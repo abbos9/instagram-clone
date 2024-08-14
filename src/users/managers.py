@@ -3,15 +3,15 @@ from django.contrib.auth.models import BaseUserManager
 from general_dj.choices import UserRoleType
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, phone, password=None, **extra_fields):
-        if not phone:
+    def create_user(self, phone_num, password=None, **extra_fields):
+        if not phone_num:
             raise ValueError('The Phone field must be set')
-        user = self.model(phone=phone, **extra_fields)
+        user = self.model(phone_num=phone_num, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone, password=None, **extra_fields):
+    def create_superuser(self, phone_num, password=None, **extra_fields):
         print('super user is creating !')
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -22,4 +22,4 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(phone, password, **extra_fields)
+        return self.create_user(phone_num, password, **extra_fields)

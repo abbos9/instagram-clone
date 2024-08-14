@@ -1,20 +1,29 @@
-from sqlalchemy import Boolean, DateTime, Integer, String
-from datetime import datetime
-from database import Base  # Ensure this is imported correctly
-from general_api.config import Tashkent_tz
+from database import Base
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import date
+from sqlalchemy import Boolean
+from sqlalchemy.orm import relationship
+
+from general_api.config import Tashkent_tz
 
 class UsersTable(Base):
-    __tablename__ = "users"  # Ensure this matches your actual table name
+    __tablename__ = "users_user"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(150), unique=True, index=True)
-    first_name: Mapped[str] = mapped_column(String(36))
-    last_name: Mapped[str] = mapped_column(String(36))
-    phone_num: Mapped[str] = mapped_column(String(36), unique=True, nullable=True)
-    password: Mapped[str] = mapped_column(String(128))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
+    first_name: Mapped[str]
+    last_name: Mapped[str]
+    email: Mapped[str]
+    phone_num: Mapped[str]
+    role: Mapped[str]
+    date_of_birth: Mapped[date]
+    gender: Mapped[str]
+    date_joined: Mapped[date]
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    role: Mapped[str] = mapped_column(String(24))
-    gender: Mapped[str] = mapped_column(String(24))
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now(tz=Tashkent_tz))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now(tz=Tashkent_tz), onupdate=datetime.now(tz=Tashkent_tz))
+
+    posts = relationship("PostTable", back_populates="user")
+    comments = relationship("PostCommentTable", back_populates="user")
+    likes = relationship("PostLikeTable", back_populates="user")
