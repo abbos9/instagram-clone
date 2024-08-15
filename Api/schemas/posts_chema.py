@@ -5,7 +5,6 @@ from schemas.auth_shema import UserResponseSchema
 
 class LikeSchema(BaseModel):
     id:int
-    user_id:int
     post_id:int
     user:Optional[UserResponseSchema] = None
     class Config:
@@ -17,6 +16,24 @@ class CommentSchema(BaseModel):
     post_id: Optional[int] = None
     comment: Optional[str] = None
     user: Optional[UserResponseSchema] = None
+
+    class Config:
+        from_attributes = True
+
+class PostSchema(BaseModel):
+    description: str
+
+    class Config:
+        from_attributes = True
+
+class UpdateSchema(BaseModel):
+    description:str
+    post_id:int
+    class Config:
+        from_attributes = True
+
+class DeleteSchema(BaseModel):
+    post_id:int
 
     class Config:
         from_attributes = True
@@ -39,6 +56,13 @@ class CreateCommentSchema(BaseModel):
 
 
 class CommentUpdateSchema(BaseModel):
+    id:int
     comment: str
+    class Config:
+        from_attributes = True
+
+class CommentDeleteSchema(BaseModel):
+    id:int
+
     class Config:
         from_attributes = True

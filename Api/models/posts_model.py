@@ -25,10 +25,6 @@ class PostTable(Base):
     likes = relationship("PostLikeTable", back_populates="post")
 
 
-    __mapper_args__ = {
-        "eager_defaults": True
-    }
-
 class PostCommentTable(Base):
     __tablename__ = 'blogs_postcomment'
     
