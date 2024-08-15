@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 
@@ -8,7 +8,7 @@ class CreateUserSchema(BaseModel):
     first_name:str
     last_name: str
     password: bytes
-    emali: str = Field(examples=['nigga@gamil.com'], pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    emali: EmailStr = Field(examples=['nigga@gamil.com'])
     phone_num:str = Field(examples=['+998901454477'], pattern=r'^\+\d{12}$')
     role:str = Field(examples=["user|premium"], pattern="^(user|premium)$")
     gender:str = Field(examples=["male|female"], pattern="^(male|female)$")

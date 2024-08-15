@@ -126,5 +126,10 @@ MEDIA_ROOT = 'media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTHENTICATION_BACKENDS = [
+    'users.backends.CustomBackend',  # Replace with the actual path
+    'django.contrib.auth.backends.ModelBackend',  # Keep the default backend as fallback
+]
+
 
 AUTH_USER_MODEL = "users.User"

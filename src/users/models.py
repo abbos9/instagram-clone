@@ -7,7 +7,9 @@ from general_dj.choices import UserRoleType, UserGenderType
 from general_dj.models import BaseModel
 from general_dj.config import Tashkent_tz
 from users.managers import CustomUserManager
+from passlib.context import CryptContext
 
+bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Create your models here.
 
 
@@ -28,7 +30,9 @@ class User(AbstractUser):
     USERNAME_FIELD = "phone_num"
     REQUIRED_FIELDS = ["username"]
 
+    def check_password(self, raw_password):
+        return bcrypt_context.verify(raw_password, self.password)
 
 
-    def __str__(self) -> str:
-        return self.username
+    def __str__(self):
+        return self.username or self.phone_num
