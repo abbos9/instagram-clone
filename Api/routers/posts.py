@@ -38,8 +38,8 @@ async def get_post(db:db_dependency,post_id: int = Path(...)):
 # Create a new post
 @router.post("/", response_model=ResponsePostSchema)
 async def create_post(
-    db: db_dependency,
     description: str,
+    db: Session = Depends(db_dependency),  # Ensure correct import and type annotation
     file: UploadFile = File(...),
     user: UsersTable = Depends(JWTBearer())
 ):
@@ -53,7 +53,10 @@ async def create_post(
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"File saving error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"File saving error: {e}"
+        )
 
     new_post = PostTable(
         user_id=user.id,
@@ -66,7 +69,10 @@ async def create_post(
         db.commit()
         db.refresh(new_post)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Database error: {e}"
+        )
 
     return new_post
 
