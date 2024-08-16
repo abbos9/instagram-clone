@@ -10,7 +10,10 @@ class LikeSchema(BaseModel):
     class Config:
         from_attributes = True
 
-class CommentSchema(BaseModel):
+class BaseCommentSchema(BaseModel):
+    id: Optional[int] = None
+
+class CommentSchema(BaseCommentSchema):
     id: Optional[int] = None
     user_id: Optional[int] = None
     post_id: Optional[int] = None
@@ -23,9 +26,6 @@ class CommentSchema(BaseModel):
 class PostSchema(BaseModel):
     description: str
 
-    class Config:
-        from_attributes = True
-
 class UpdateSchema(BaseModel):
     description:str
     post_id:int
@@ -37,6 +37,8 @@ class DeleteSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
 
 class ResponsePostSchema(BaseModel):
     id: int

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Path, s
 from sqlalchemy.orm import Session
 from models.auth_models import UsersTable
 from models.posts_model import PostCommentTable, PostLikeTable, PostTable
-from schemas.posts_chema import (CommentSchema, CreateCommentSchema, DeleteSchema, UpdateSchema, PostSchema,CommentDeleteSchema,
+from schemas.posts_chema import (BaseCommentSchema, CommentSchema, CreateCommentSchema, DeleteSchema, UpdateSchema, PostSchema,CommentDeleteSchema,
 ResponsePostSchema,CommentUpdateSchema, LikeSchema)
 from database import get_db
 from utils.auth_utils import JWTBearer, JWTHandler
@@ -38,8 +38,8 @@ async def get_post(db:db_dependency,post_id: int = Path(...)):
 # Create a new post
 @router.post("/", response_model=ResponsePostSchema)
 async def create_post(
+    db: db_dependency,
     description: str,
-    db: Session = Depends(db_dependency),  # Ensure correct import and type annotation
     file: UploadFile = File(...),
     user: UsersTable = Depends(JWTBearer())
 ):
@@ -53,10 +53,7 @@ async def create_post(
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"File saving error: {e}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"File saving error: {e}")
 
     new_post = PostTable(
         user_id=user.id,
@@ -69,10 +66,7 @@ async def create_post(
         db.commit()
         db.refresh(new_post)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Database error: {e}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {e}")
 
     return new_post
 
@@ -122,9 +116,9 @@ async def update_post(
 @router.delete("/{post_id}", response_model=dict)
 async def delete_post(
     db: db_dependency, 
-    post_id: int = Path(...),                
+    schema: DeleteSchema,                
     user: UsersTable = Depends(JWTBearer())):
-    post = db.query(PostTable).filter(PostTable.id == post_id).first()
+    post = db.query(PostTable).filter(PostTable.id == schema.post_id).first()
     
     if not post:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
@@ -166,10 +160,9 @@ async def write_comment(posts_schema:CreateCommentSchema,db:db_dependency,user: 
 async def update_comment(
     comment_update: CommentUpdateSchema,
     db: db_dependency,
-    comment_id: int,
     user: UsersTable = Depends(JWTBearer())
 ):
-    comment = db.query(PostCommentTable).filter(PostCommentTable.id == comment_id).first()
+    comment = db.query(PostCommentTable).filter(PostCommentTable.id == comment_update.id).first()
 
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
@@ -191,11 +184,11 @@ async def update_comment(
 # Delete comment
 @router.delete("/comment/{comment_id}", status_code=204)
 async def delete_comment(
-    comment_id: int,
+    comment_schema:CommentDeleteSchema,
     db: db_dependency,
     user: UsersTable = Depends(JWTBearer())
 ):
-    comment = db.query(PostCommentTable).filter(PostCommentTable.id == comment_id).first()
+    comment = db.query(PostCommentTable).filter(PostCommentTable.id == comment_schema.id).first()
 
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
@@ -213,8 +206,8 @@ async def delete_comment(
 
 # get comment
 @router.get("/posts/{post_id}/comment", response_model=list[CommentSchema])
-async def get_comments(post_id: int, db: db_dependency):
-    comments = db.query(PostCommentTable).filter(PostCommentTable.post_id == post_id).all()
+async def get_comments(schema: int, db: db_dependency):
+    comments = db.query(PostCommentTable).filter(PostCommentTable.post_id == schema).all()
 
     if not comments:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No comments found for this post")
@@ -227,13 +220,13 @@ async def get_comments(post_id: int, db: db_dependency):
 # Create like
 
 @router.post('/like/{post_id}/', response_model=LikeSchema)
-async def create_like(db:db_dependency,post_id:int,user:UsersTable = Depends(JWTBearer())):
-    post = db.query(PostTable).filter(PostTable.id == post_id).first()
+async def create_like(db:db_dependency,schema:LikeSchema,user:UsersTable = Depends(JWTBearer())):
+    post = db.query(PostTable).filter(PostTable.id == schema.post_id).first()
 
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
-    existing_like = db.query(PostLikeTable).filter(PostLikeTable.post_id == post_id, PostLikeTable.user_id == user.id).first()
+    existing_like = db.query(PostLikeTable).filter(PostLikeTable.post_id == schema.post_id, PostLikeTable.user_id == user.id).first()
 
     if existing_like:
         db.delete(existing_like)
