@@ -4,11 +4,11 @@ from datetime import date, datetime
 from sqlalchemy import Boolean
 from sqlalchemy import DateTime
 
-from general_dj.config import Tashkent_tz
+from general_api.config import Tashkent_tz
 
 class BaseMode(Base):
     __abstract__ = True
-    
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now(tz=Tashkent_tz))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now(tz=Tashkent_tz), onupdate=datetime.now(tz=Tashkent_tz))
 
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True,index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(tz=Tashkent_tz), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(tz=Tashkent_tz), onupdate=datetime.now(tz=Tashkent_tz), nullable=False)

@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 from schemas.auth_shema import UserResponseSchema
 
 
@@ -38,16 +38,29 @@ class DeleteSchema(BaseModel):
     class Config:
         from_attributes = True
 
-
-
-class ResponsePostSchema(BaseModel):
+class BaseResponseSchema(BaseModel):
     id: int
+
+    class Config:
+        from_attributes = True
+
+class SaveSchema(BaseModel):
+    post_id:int
+
+class ResponsePostSchema(BaseResponseSchema):
     user_id: int
     description: str
     file: str
     user: UserResponseSchema
     comments: List[CommentSchema] = []
-    likes:List[LikeSchema] = []
+    likes: List[LikeSchema] = []
+    saves: List[SaveSchema] = []
+
+    class Config:
+        from_attributes = True
+
+class UuidSchema(BaseModel):
+    uuid: str
 
     class Config:
         from_attributes = True

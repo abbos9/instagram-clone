@@ -4,8 +4,6 @@ from datetime import date
 from sqlalchemy import Boolean
 from sqlalchemy.orm import relationship
 
-from general_api.config import Tashkent_tz
-
 class UsersTable(Base):
     __tablename__ = "users_user"
 
@@ -27,3 +25,4 @@ class UsersTable(Base):
     posts = relationship("PostTable", back_populates="user")
     comments = relationship("PostCommentTable", back_populates="user")
     likes = relationship("PostLikeTable", back_populates="user")
+    saves = relationship("PostSaveTable", back_populates="user")  

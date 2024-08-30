@@ -42,3 +42,13 @@ class PostLike(BaseModel):
 
     def __str__(self) -> str:
         return f"user:{self.user.username}, post:{self.post.description} "
+
+
+class PostSave(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'post')
+    def __str__(self) -> str:
+        return f"user:{self.user.username}, post:{self.post.description} "
