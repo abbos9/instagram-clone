@@ -1,18 +1,18 @@
-fastapi
-sqlalchemy
-uvicorn
-pytz
-python-jose
-passlib
-python-multipart
-pyjwt
-alembic
-bcrypt
-psycopg2-binary
-psycopg2
-alembic
-django
-python-dotenv
-django-phonenumber-field
-Pillow
-pydantic[email]
+# fastapi
+# sqlalchemy
+# uvicorn
+# pytz
+# python-jose
+# passlib
+# python-multipart
+# pyjwt
+# alembic
+# bcrypt
+# psycopg2-binary
+# psycopg2
+# alembic
+# django
+# python-dotenv
+# django-phonenumber-field
+# Pillow
+# pydantic[email]

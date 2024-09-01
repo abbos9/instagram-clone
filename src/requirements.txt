@@ -1,0 +1,10 @@
+django
+python-dotenv
+django-phonenumber-field
+Pillow
+psycopg2-binary
+psycopg2
+pytz
+passlib
+bcrypt
+passlib

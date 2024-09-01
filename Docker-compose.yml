@@ -1,0 +1,45 @@
+version: '3'
+services:
+  db:
+    container_name: PostgresDB
+    image: postgres:16.4-alpine3.20
+    expose:
+      - 5432
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: backend-api
+    build: ./Api
+    ports:
+      - "90:90"
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+
+  frontend:
+    container_name: frontend
+    build: ./src
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    command: >
+      sh -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python create_superuser.py &&
+        exec python manage.py runserver 0.0.0.0:8000
+      "
+
+volumes:
+  postgres_data:
