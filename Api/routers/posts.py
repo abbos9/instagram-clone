@@ -1,22 +1,26 @@
 from typing import Annotated
-from fastapi import APIRouter, Body, Depends, Form, HTTPException, File, UploadFile, Path, status
+import aiofiles
+from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Path, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from directories.posts import create_dir as post_create_dir
 from models.auth_models import UsersTable
 from models.posts_model import PostCommentTable, PostLikeTable, PostSaveTable, PostTable
 from schemas.posts_chema import (BaseCommentSchema, CommentSchema, CreateCommentSchema, DeleteSchema, SaveSchema, UpdateSchema, PostSchema,CommentDeleteSchema,
 ResponsePostSchema,CommentUpdateSchema, LikeSchema, BaseResponseSchema, UuidSchema)
 from database import get_db
 from utils.auth_utils import JWTBearer, JWTHandler
-import shutil
-import os
 from fastapi.responses import FileResponse
-import uuid
 from general_api.descriptions import create_post_desc_post, create_post_desc
+
+
+
 router = APIRouter(
     prefix='/post',
     tags=['posts']
 )
+
+
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
@@ -29,7 +33,7 @@ async def get_posts(db:db_dependency,user: UsersTable = Depends(JWTBearer())):
     return posts
 
 # Read a single post by ID
-@router.post("/{post_id}", response_model=ResponsePostSchema)
+@router.post("/{post_id}/", response_model=ResponsePostSchema)
 async def get_post(db:db_dependency,post:BaseResponseSchema, ):
     post = db.execute(select(PostTable).join(UsersTable).where(PostTable.id == post.id)).scalar()
 
@@ -37,91 +41,97 @@ async def get_post(db:db_dependency,post:BaseResponseSchema, ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     return post
 
-@router.post("/image/")
-def get_img(image_request: UuidSchema):
-    filepath = os.path.join('media/', os.path.basename(str(image_request.uuid)))
-    
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="Image not found")
-    
-    return FileResponse(filepath)
 
 
-@router.post("/", response_model=ResponsePostSchema,description=create_post_desc_post)
-async def create_post(
-    db: db_dependency,
-    description: str = Form(...),
+# @router.post("/image/")
+# def get_img(image_request: UuidSchema):
+#     filepath = os.path.join('media/', os.path.basename(str(image_request.uuid)))
+    
+#     if not os.path.exists(filepath):
+#         raise HTTPException(status_code=404, detail="Image not found")
+    
+#     return FileResponse(filepath)
+
+
+@router.post("/", description=create_post_desc_post)
+async def create_posts(
+    session: db_dependency,
     file: UploadFile = File(...),
-    user: UsersTable = Depends(JWTBearer())
-):
-    file_dir = "media/"
-    os.makedirs(file_dir, exist_ok=True)
+    description: str = Form(...),
+    user: UsersTable = Depends(JWTBearer()),
+    ):
     
-    unique_filename = f"{uuid.uuid4()}_{file.filename}"
-    file_location = os.path.join(file_dir, unique_filename)
-    
-    try:
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"File saving error: {e}")
-
-    new_post = PostTable(
+    post = PostTable(
         user_id=user.id,
+        file=None,
         description=description,
-        file=unique_filename
     )
-    
-    try:
-        db.add(new_post)
-        db.commit()
-        db.refresh(new_post)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {e}")
+    session.add(post)
+    session.flush()
+    file_dir_for_django = None
+    if file is not None:
+        file_data = await post_create_dir(post_id=post.id, filename=file.filename)
+        content = file.file.read()
+        async with aiofiles.open(file_data['file_full_path'], 'wb') as out_file:
+            file_dir_for_django = file_data['file_dir'] + file.filename
+            await out_file.write(content)
+    post.file = file_dir_for_django
+    session.commit()
+    session.refresh(post)
 
-    return new_post
+    return {
+        "message": "Created !"
+    }
+
 
 # Update a post by ID
-@router.put("/{post_id}", response_model=ResponsePostSchema,)
+@router.patch("/{post_id}/")
 async def update_post(
-    db: db_dependency,
-    post_id: int = Path(...),
-    description: str = Form(...),
+    session: db_dependency,
+    post_id: int= Path(...),
     file: UploadFile = File(None),
+    description: str = Form(None),
     user: UsersTable = Depends(JWTBearer())
 ):
-    post = db.query(PostTable).join(UsersTable).filter(PostTable.id == post_id).first()
+    # Step 1: Fetch the existing post by ID
+    post = session.query(PostTable).filter(PostTable.id == post_id, PostTable.user_id == user.id).first()
     
     if not post:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+        raise HTTPException(status_code=404, detail="Post not found or you're not authorized to update this post")
+
     if post.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this post")
 
-    if description is not None:
+
+    # Step 2: Update the description if provided
+    if description:
         post.description = description
 
+    file_dir_for_django = post.file  # Keep the current file path if no new file is provided
+
+    # Step 3: Process the uploaded file (if provided)
     if file is not None:
-        file_dir = "media/"
-        os.makedirs(file_dir, exist_ok=True)
-        
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
-        file_location = os.path.join(file_dir, unique_filename)
-        
+        file_data = await post_create_dir(post_id=post.id, filename=file.filename)
         try:
-            with open(file_location, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            # Read the file asynchronously
+            content = await file.read()
+
+            # Write the file asynchronously
+            async with aiofiles.open(file_data['file_full_path'], 'wb') as out_file:
+                await out_file.write(content)
+
+            file_dir_for_django = file_data['file_dir'] + file.filename  # Update the file path
         except Exception as e:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"File saving error: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
-        post.file = unique_filename
-    try:
-        db.commit()
-        db.refresh(post)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {e}")
+    # Step 4: Update the file path and commit the changes
+    post.file = file_dir_for_django
+    session.commit()
+    session.refresh(post)
 
-    return post
-
+    return {
+        "message": "Post updated successfully!"
+    }
 # Delete a post by ID
 @router.delete("/{post_id}", response_model=dict)
 async def delete_post(
@@ -148,9 +158,14 @@ async def delete_post(
 # COMMENTS
 
 # Write comments
-@router.post("/comment", response_model=CreateCommentSchema)
-async def write_comment(posts_schema:CreateCommentSchema,db:db_dependency,user: UsersTable = Depends(JWTBearer())):
+@router.post("/comment/", response_model=CreateCommentSchema)
+async def write_comment(
+                        db:db_dependency,
+                        posts_schema:CreateCommentSchema,
+                        user: UsersTable = Depends(JWTBearer())):
+
     post = db.query(PostTable).filter(PostTable.id == posts_schema.post_id).first()
+    
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
@@ -166,7 +181,7 @@ async def write_comment(posts_schema:CreateCommentSchema,db:db_dependency,user: 
 
 
 # Update comment
-@router.put('/comment/{comment_id}', response_model=CommentUpdateSchema)
+@router.put('/comment/{comment_id}/', response_model=CommentUpdateSchema)
 async def update_comment(
     comment_update: CommentUpdateSchema,
     db: db_dependency,
@@ -192,7 +207,7 @@ async def update_comment(
 
 
 # Delete comment
-@router.delete("/comment/{comment_id}", status_code=204)
+@router.delete("/comment/{comment_id}/", status_code=204)
 async def delete_comment(
     comment_schema:CommentDeleteSchema,
     db: db_dependency,
@@ -215,7 +230,7 @@ async def delete_comment(
     return {"message": "Comment deleted successfully"}
 
 # get comment
-@router.post("/{post_id}/comment", response_model=list[CommentSchema])
+@router.post("/{post_id}/comment/", response_model=list[CommentSchema])
 async def get_comments(schema: BaseCommentSchema, db: db_dependency):
     comments = db.execute(select(PostCommentTable).where(PostCommentTable.post_id == schema.id)).scalars().all()
 
@@ -256,7 +271,7 @@ async def create_like(db:db_dependency,schema:LikeSchema,user:UsersTable = Depen
     return new_like
 
 # Get user's liked posts
-@router.get('/user/likes', response_model=list[ResponsePostSchema])
+@router.get('/user/likes/', response_model=list[ResponsePostSchema])
 async def user_like(
     db: db_dependency,
     user: UsersTable = Depends(JWTBearer())
@@ -269,7 +284,7 @@ async def user_like(
 
 # Save
 
-@router.post("/save/post", response_model=SaveSchema)
+@router.post("/save/post/", response_model=SaveSchema)
 async def create_save(db: db_dependency, schema: SaveSchema, user: UsersTable = Depends(JWTBearer())):
     post = db.execute(select(PostTable).where(PostTable.id == schema.post_id)).scalar()
 

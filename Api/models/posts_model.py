@@ -8,7 +8,7 @@ class PostTable(BaseMode):
     
     user_id: Mapped[int] = mapped_column(ForeignKey('users_user.id'), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text)
-    file: Mapped[str] = mapped_column(Text)
+    file: Mapped[str] = mapped_column(Text, nullable=True)
 
     user = relationship("UsersTable", back_populates="posts")
     comments = relationship("PostCommentTable", back_populates="post")

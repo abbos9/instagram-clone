@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 Base.metadata.create_all(bind=engine)
 
 
-app = FastAPI(title="Instagram Api",)
+app = FastAPI(title="Instagram Api")
 
 
 from routers import auth
@@ -17,4 +17,4 @@ app.include_router(auth.router)
 app.include_router(posts.router)
 
 
-app.mount("/media", StaticFiles(directory="media"), name="media")
+# app.mount("/media", StaticFiles(directory="media"), name="media")

@@ -10,7 +10,7 @@ from users.models import User
 class Post(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.TextField()
-    file = models.FileField(upload_to='media/post/video')
+    file = models.FileField(upload_to='posts/',null=True, blank=True )
 
     class Meta:
         verbose_name = "Post"

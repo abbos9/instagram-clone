@@ -52,9 +52,9 @@ class ResponsePostSchema(BaseResponseSchema):
     description: str
     file: str
     user: UserResponseSchema
-    comments: List[CommentSchema] = []
-    likes: List[LikeSchema] = []
-    saves: List[SaveSchema] = []
+    comments: List[CommentSchema] = None
+    likes: List[LikeSchema] = None
+    saves: List[SaveSchema] = None
 
     class Config:
         from_attributes = True
@@ -62,12 +62,12 @@ class ResponsePostSchema(BaseResponseSchema):
 class UuidSchema(BaseModel):
     uuid: str
 
-    class Config:
-        from_attributes = True
-
 class CreateCommentSchema(BaseModel):
     post_id: int
     comment: str
+
+    class Config:
+        from_attributes = True
 
 
 class CommentUpdateSchema(BaseModel):

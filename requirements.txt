@@ -16,3 +16,5 @@
 # django-phonenumber-field
 # Pillow
 # pydantic[email]
+# pytest
+aiofiles

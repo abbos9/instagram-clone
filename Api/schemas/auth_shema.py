@@ -34,3 +34,8 @@ class UserResponseSchema(BaseModel):
 class UserLoginSchema(BaseModel):
     username:str
     password:str
+
+
+class UserVerifications(BaseModel):
+    password:str
+    new_password: str = Field(min_length=6)
