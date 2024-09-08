@@ -158,7 +158,7 @@ async def delete_post(
 # COMMENTS
 
 # Write comments
-@router.post("/comment/", response_model=CreateCommentSchema)
+@router.post("/comment", response_model=CreateCommentSchema)
 async def write_comment(
                         db:db_dependency,
                         posts_schema:CreateCommentSchema,
@@ -181,7 +181,7 @@ async def write_comment(
 
 
 # Update comment
-@router.put('/comment/{comment_id}/', response_model=CommentUpdateSchema)
+@router.put('/comment/{comment_id}', response_model=CommentUpdateSchema)
 async def update_comment(
     comment_update: CommentUpdateSchema,
     db: db_dependency,
@@ -207,7 +207,7 @@ async def update_comment(
 
 
 # Delete comment
-@router.delete("/comment/{comment_id}/", status_code=204)
+@router.delete("/comment/{comment_id}", status_code=204)
 async def delete_comment(
     comment_schema:CommentDeleteSchema,
     db: db_dependency,
@@ -230,7 +230,7 @@ async def delete_comment(
     return {"message": "Comment deleted successfully"}
 
 # get comment
-@router.post("/{post_id}/comment/", response_model=list[CommentSchema])
+@router.post("/{post_id}/comment", response_model=list[CommentSchema])
 async def get_comments(schema: BaseCommentSchema, db: db_dependency):
     comments = db.execute(select(PostCommentTable).where(PostCommentTable.post_id == schema.id)).scalars().all()
 
@@ -244,7 +244,7 @@ async def get_comments(schema: BaseCommentSchema, db: db_dependency):
 
 # Create like
 
-@router.post('/like/{post_id}/', response_model=LikeSchema)
+@router.post('/like/{post_id}', response_model=LikeSchema)
 async def create_like(db:db_dependency,schema:LikeSchema,user:UsersTable = Depends(JWTBearer())):
     post = db.execute(select(PostTable).where(PostTable.id == schema.post_id)).scalar()
 
@@ -271,7 +271,7 @@ async def create_like(db:db_dependency,schema:LikeSchema,user:UsersTable = Depen
     return new_like
 
 # Get user's liked posts
-@router.get('/user/likes/', response_model=list[ResponsePostSchema])
+@router.get('/user/likes', response_model=list[ResponsePostSchema])
 async def user_like(
     db: db_dependency,
     user: UsersTable = Depends(JWTBearer())
@@ -284,7 +284,7 @@ async def user_like(
 
 # Save
 
-@router.post("/save/post/", response_model=SaveSchema)
+@router.post("/save/post", response_model=SaveSchema)
 async def create_save(db: db_dependency, schema: SaveSchema, user: UsersTable = Depends(JWTBearer())):
     post = db.execute(select(PostTable).where(PostTable.id == schema.post_id)).scalar()
 
@@ -315,7 +315,7 @@ async def create_save(db: db_dependency, schema: SaveSchema, user: UsersTable = 
 
 
 
-@router.get('/saved/', response_model=list[ResponsePostSchema])
+@router.get('/saved', response_model=list[ResponsePostSchema])
 async def get_saved_posts(db:db_dependency, user: UsersTable = Depends(JWTBearer())):
 
     saved_posts = db.execute(select(PostTable).join(PostSaveTable,).where(PostSaveTable.user_id == user.id)).scalars().all()
